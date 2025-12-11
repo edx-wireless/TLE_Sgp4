@@ -26,7 +26,7 @@ namespace OneSGP4_Example
 
                 One_Sgp4.Sgp4 sgp4Propagator = new Sgp4(OmmList[0], Sgp4.wgsConstant.WGS_84);
             */
-
+#if DEBUG
             //Code to check Latitude/Longitude for Satallite
             //Working TLE
             //string line1 = "1 25544U 98067A   19364.04305556 -.00001219  00000-0 -13621-4 0  9993";
@@ -52,7 +52,7 @@ namespace OneSGP4_Example
 
             //Console.WriteLine($"Latitude:  {subpoint.getLatitude():F6}°");
             //Console.WriteLine($"Longitude: {subpoint.getLongitude():F6}°");
-            //Console.WriteLine($"Hight / Altitude:  {subpoint.getHeight():F3} km");
+            //Console.WriteLine($"Height / Altitude:  {subpoint.getHeight():F3} km");
 
 
             ////Check file/Directory Exist to create BNA file
@@ -64,7 +64,7 @@ namespace OneSGP4_Example
             //{
             //    Directory.CreateDirectory(directory);
             //}
-
+#endif
 
             //Parse three line element
             Tle tleISS = ParserTLE.parseTle(
@@ -110,7 +110,7 @@ namespace OneSGP4_Example
 
                 Console.WriteLine($"Latitude:  {subpoint.getLatitude():F6}°");
                 Console.WriteLine($"Longitude: {subpoint.getLongitude():F6}°");
-                Console.WriteLine($"Hight / Altitude:  {subpoint.getHeight():F3} km");
+                Console.WriteLine($"Height / Altitude:  {subpoint.getHeight():F3} km");
 
                 //satelliteNames.Add(tle.getName());
                 satelliteList.Add(tle);
@@ -125,22 +125,22 @@ namespace OneSGP4_Example
                 // Append only coordinates
                 //File.AppendAllText(filePath, coordinateLine);
             }
-
-            //Get TLE from Space-Track.org
-            //list of satellites by their NORAD ID
-            string[] noradIDs = { "8709", "43572" };
-            try
-            {
-                //One_Sgp4.SpaceTrack.GetSpaceTrack(noradIDs, "USERNAME", "PASSWORD");string username = "";
-                string username = "";
-                string password = "";
-                if (username != "" && password != "")
-                    One_Sgp4.SpaceTrack.GetSpaceTrack(noradIDs, username, password);
-                else
-                    Console.WriteLine("Skipping Space-Track download: no credentials provided.");
-            }
-            catch { Console.Out.WriteLine("Error could not retrive TLE's from Space-Track, Login credentials might be wrong"); }
-
+#if DEBUG
+            ////Get TLE from Space-Track.org
+            ////list of satellites by their NORAD ID
+            //string[] noradIDs = { "8709", "43572" };
+            //try
+            //{
+            //    //One_Sgp4.SpaceTrack.GetSpaceTrack(noradIDs, "USERNAME", "PASSWORD");string username = "";
+            //    string username = "";
+            //    string password = "";
+            //    if (username != "" && password != "")
+            //        One_Sgp4.SpaceTrack.GetSpaceTrack(noradIDs, username, password);
+            //    else
+            //        Console.WriteLine("Skipping Space-Track download: no credentials provided.");
+            //}
+            //catch { Console.Out.WriteLine("Error could not retrive TLE's from Space-Track, Login credentials might be wrong"); }
+#endif
 
             //Create Time points
             EpochTime startTime = new EpochTime(DateTime.UtcNow);
@@ -212,25 +212,27 @@ namespace OneSGP4_Example
 
                 await Task.Delay(1000); // wait 1 seconds (non-blocking)
 
-                Console.WriteLine("{0}  \nLatitude: {1} \nLongitude: {2} \nHight/Altitude {3}", p, observer2.getLatitude(), observer2.getLongitude(), observer2.getHeight());
+                Console.WriteLine("{0}  \nLatitude: {1} \nLongitude: {2} \nHeight/Altitude {3}", p, observer2.getLatitude(), observer2.getLongitude(), observer2.getHeight());
             }
             Console.Out.WriteLine("Done");
 
+#if DEBUG
             //***********1st Part: WinForms Application Run **************//
             //// You can still read console args if needed
             //Application.EnableVisualStyles();
             //Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new SatelliteTrackingForm());
 
-            ////******Part2: WinForms Application Run + Console Application Test i.e.If you want BOTH Console Output + WinForms**************//
-            Console.WriteLine("Console + WinForms test.");
-            //await Task.Run(() => Application.Run(new SatelliteTrackingForm(satelliteNames)));
-            await Task.Run(() => Application.Run(new SatelliteTrackingForm(satelliteList)));
-            //await Task.Run(() => Application.Run(new SatelliteTrackingForm()));
-            Console.WriteLine("WinForms running in background...");
-            Console.ReadLine();
+            //////******Part2: WinForms Application Run + Console Application Test i.e.If you want BOTH Console Output + WinForms**************//
+            //Console.WriteLine("Console + WinForms test.");
+            ////await Task.Run(() => Application.Run(new SatelliteTrackingForm(satelliteNames)));
+            //await Task.Run(() => Application.Run(new SatelliteTrackingForm(satelliteList)));
+            ////await Task.Run(() => Application.Run(new SatelliteTrackingForm()));
+            //Console.WriteLine("WinForms running in background...");
+            //Console.ReadLine();
 
             //**********************************************
+#endif
         }
     }
 }
