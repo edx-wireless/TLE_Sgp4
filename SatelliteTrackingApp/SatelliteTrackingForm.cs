@@ -8,9 +8,7 @@ namespace SatelliteTrackingApp
 {
     public partial class SatelliteTrackingForm : Form
     {
-        //private static readonly string LogDirectory = @"C:\SatelliteTrackingLogs";
-        private static readonly string LogDirectory = @"C:\Program Data\EDX";
-       //private static readonly string LogDirectory =Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData) + "\\EDX\\";
+        private static readonly string LogDirectory = Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData) + "\\EDX";
         private static readonly string LogFilePath = Path.Combine(LogDirectory, "SatelliteLog.txt");
         private List<Tle> _loadedTleList;//TLE browse button
 
