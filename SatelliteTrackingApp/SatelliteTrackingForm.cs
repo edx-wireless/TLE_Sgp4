@@ -264,10 +264,10 @@ namespace SatelliteTrackingApp
                         Coordinate subPoint =
                             SatFunctions.calcSatSubPoint(currentTime, state, Sgp4.wgsConstant.WGS_84);
 
-                        string line = $"{subPoint.getLatitude():F6},{subPoint.getLongitude():F6}\n";
+                        string line = $"{subPoint.getLongitude():F6},{subPoint.getLatitude():F6}\n";
                         File.AppendAllText(outputPath, line);
 
-                        Log($"Wrote point: Lat={subPoint.getLatitude():F6} , Lon={subPoint.getLongitude():F6}");
+                        Log($"Wrote point: Lon={subPoint.getLongitude():F6},Lat={subPoint.getLatitude():F6}");
                     }
                     catch (Exception exInner)
                     {
