@@ -20,12 +20,15 @@ namespace One_Sgp4
 {
     public class Tle
     {
-    /**
-    * \brief Tle Class definition.
-    *
-    * This class contains the definition of the TLE-Object wich is used for 
-    * all further calculations and orbit predictions.
-    */
+        /**
+        * \brief Tle Class definition.
+        *
+        * This class contains the definition of the TLE-Object wich is used for 
+        * all further calculations and orbit predictions.
+        */
+
+        public string Line1 { get; set; }
+        public string Line2 { get; set; }
 
         private string satName; /*!<Object Name Identifier*/
 
@@ -105,12 +108,14 @@ namespace One_Sgp4
         \param int Checksum (Modulo 10)
         Each Object of TLE must have a valid Name
         */
-        public Tle(string name, string id, Enum.satClass clas, int startY, int startNr,
+        public Tle(string line1, string line2, string name, string id, Enum.satClass clas, int startY, int startNr,
             string piece, int epochY, double epochD, double firstMM, double secondMM,
             double drag, double ephem, int setNr, int check1, int satNr, double incl,
             double rightAsc, double ecce, double peri, double meanAn, double meanMo,
             double relevationNr, int check2)
         {
+            Line1 = line1;
+            Line2 = line2;
             satName = name;
             noradID = id;
             classification = clas;
@@ -209,6 +214,10 @@ namespace One_Sgp4
         public string getName()
         {
             return satName;
+        }
+        public string SatName
+        {
+            get { return satName; }
         }
 
         //! Returns the NORAD Identification

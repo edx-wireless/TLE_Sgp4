@@ -264,7 +264,7 @@ namespace One_Sgp4
                     throw new InvalidDataException("Could not parse Line 2.", ex);
                 }
 
-                ret = new Tle(tleName, noradId, parseClassification(satCl), startYear, startNumber, intDes,
+                ret = new Tle(tleLine1, tleLine2, tleName, noradId, parseClassification(satCl), startYear, startNumber, intDes,
                 epochYear, epochDay, firstMeanMotion, secondMeanMotion, dragTerm,
                 ephemeris, setNumber, checksum1, satNumber, inclination, rightAscension,
                 eccentricity, perigee, meanAnomoly, meanMotion, relevationNumber, checksum2);
