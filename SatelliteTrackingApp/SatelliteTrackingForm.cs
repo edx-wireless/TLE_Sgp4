@@ -31,7 +31,7 @@ namespace SatelliteTrackingApp
                 // Silent catch - logging should never crash the app
             }
         }
-        
+
         private void btnBrowseTLE_Click(object sender, EventArgs e)
         {
             Log("---- btnBrowseTLE_Click invoked ----");
@@ -93,16 +93,16 @@ namespace SatelliteTrackingApp
 
             try
             {
-                Log("Opening SaveFileDialog for BNA output path...");
+                Log("Opening SaveFileDialog for CSV output path...");
                 SaveFileDialog dlg = new SaveFileDialog
                 {
-                    Filter = "BNA files (*.bna)|*.bna|All files (*.*)|*.*"
+                    Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
                 };
 
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     txtOutputFile.Text = dlg.FileName;
-                    Log($"Output BNA path selected: {dlg.FileName}");
+                    Log($"Output CSV path selected: {dlg.FileName}");
                 }
                 else
                 {
@@ -123,6 +123,10 @@ namespace SatelliteTrackingApp
             Log("---- btnBrowseOutput_Click completed ----\n");
         }
 
+        const double WGS84_A = 6378.137;      // Semi-major axis (equatorial radius, km)
+        const double WGS84_B = 6356.752314;   // Semi-minor axis (polar radius, km)
+
+
         private async void btnGenerate_Click(object sender, EventArgs e)
         {
             Log("========== Satellite Tracking Started ==========");
@@ -134,32 +138,16 @@ namespace SatelliteTrackingApp
                 // ------------------------------
                 Log("Validating input fields...");
 
-                //if (string.IsNullOrWhiteSpace(txtTLEFile.Text) ||
-                //    string.IsNullOrWhiteSpace(txtOutputFile.Text) ||
-                //    comboSatelliteList.SelectedItem == null)
-                //{
-                //    Log("Validation failed: Missing TLE, satellite selection, or output file.");
-                //    MessageBox.Show("Please select a TLE file, satellite, and output file.",
-                //                     "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
-
                 if (string.IsNullOrWhiteSpace(txtTLEFile.Text))
                 {
                     Log("Validation failed: Missing TLE.");
-                    MessageBox.Show("Please select a TLE file.","Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Please select a TLE file.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(txtOutputFile.Text))
                 {
-                    Log("Validation failed: satellite selection.");
-                    MessageBox.Show("Please select a satellite Name.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                if (string.IsNullOrWhiteSpace(txtOutputFile.Text))
-                {
-                    Log("Validation failed: output file.");
-                    MessageBox.Show("Please select a output file.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Log("Validation failed: Missing output file.");
+                    MessageBox.Show("Please select an output file.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -169,59 +157,39 @@ namespace SatelliteTrackingApp
                 int totalHours = (int)numHours.Value;
                 int intervalMinutes = (int)numMinutes.Value;
 
-                // Hours > 0
                 if (totalHours <= 0)
                 {
                     Log("Validation failed: Total Hours value is 0.");
-                    MessageBox.Show("Total Time (hours) must be greater than 0.",
-                                    "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Total Time (hours) must be greater than 0.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
-                // Interval Minutes > 0
                 if (intervalMinutes <= 0)
                 {
                     Log("Validation failed: Time Interval value is 0.");
-                    MessageBox.Show("Time Interval (minutes) must be greater than 0.",
-                                    "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Time Interval (minutes) must be greater than 0.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
 
                 // ------------------------------
                 // ** DATE VALIDATION **
                 // ------------------------------
                 DateTime startDate = dateTimePickerPassTime.Value;
 
-                //if (startDate < DateTime.Now)
-                //{
-                //    Log("Validation failed: Start date/time is in the past.");
-                //    MessageBox.Show("Start Date/Time cannot be in the past.",
-                //                    "Invalid Date", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    return;
-                //}
-
                 // ------------------------------
-                //   INPUTS ARE VALID – CONTINUE
+                //   INPUTS ARE VALID - CONTINUE
                 // ------------------------------
-
-                // Selected TLE
                 Tle selectedTle = comboSatelliteList.SelectedItem as Tle;
                 string satName = selectedTle.getName();
                 Log($"Selected satellite: {satName}");
-
-                // Convert to EpochTime
-                EpochTime startEpoch = new EpochTime(startDate);
-                EpochTime endEpoch = new EpochTime(startDate.AddHours(totalHours)
-                                                              .AddMinutes(intervalMinutes));
-
                 Log($"Tracking for {totalHours} hours, interval = {intervalMinutes} minutes");
 
-                // Output path setup
-                string outputPath = txtOutputFile.Text;
-                string? directory = Path.GetDirectoryName(outputPath);
+                // ------------------------------
+                // ** OUTPUT PATH SETUP **
+                // ------------------------------
+                string csvOutputPath = txtOutputFile.Text;
+                string? directory = Path.GetDirectoryName(csvOutputPath);
 
-                if (!Directory.Exists(directory))
+                if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                     Log($"Created output directory: {directory}");
@@ -231,76 +199,106 @@ namespace SatelliteTrackingApp
                 Log("Parsing TLE...");
                 Tle tle = ParserTLE.parseTle(selectedTle.Line1, selectedTle.Line2, satName);
 
-                // Time steps
                 int steps = (totalHours * 60) / intervalMinutes;
                 int totalPoints = steps + 1;
                 Log($"Total points to calculate: {totalPoints}");
 
-                // Write BNA header
-                string header = $"\"*EDX_Polyline*\", \"\", -{totalPoints}, Start Date Time(hh:mm:ss):{startDate}\n";
-                File.WriteAllText(outputPath, header);
-                Log("Wrote BNA header successfully.");
+                // Write CSV header
+                string csvHeader = "Latitude,Longitude,Altitude_km\n";
+                File.WriteAllText(csvOutputPath, csvHeader);
+                Log($"Wrote CSV header to: {csvOutputPath}");
 
                 // Initialize SGP4
                 Log("Initializing SGP4...");
                 Sgp4 sgp4 = new Sgp4(tle, Sgp4.wgsConstant.WGS_84);
 
-                // LOOP
+                // ------------------------------
+                // ** MAIN LOOP **
+                // ------------------------------
                 Log("Beginning satellite position generation loop...");
                 for (int i = 0; i <= steps; i++)
                 {
                     try
                     {
-                        EpochTime currentTime =
-                            new EpochTime(startDate.AddMinutes(i * intervalMinutes));
+                        DateTime currentDateTime = startDate.AddMinutes(i * intervalMinutes);
+                        EpochTime currentTime = new EpochTime(currentDateTime);
 
-                        Log($"Calculating satellite position for t+{i * intervalMinutes} minutes");
-
-                        // Calc ECI
+                        // Step 1: SGP4 - get ECI position from TLE
                         Sgp4Data state = SatFunctions.getSatPositionAtTime(
                             tle, currentTime, Sgp4.wgsConstant.WGS_84);
 
-                        // Sub-point
-                        Coordinate subPoint =
-                            SatFunctions.calcSatSubPoint(currentTime, state, Sgp4.wgsConstant.WGS_84);
+                        // Step 2: Sub-satellite point (lat, lon)
+                        Coordinate subPoint = SatFunctions.calcSatSubPoint(
+                            currentTime, state, Sgp4.wgsConstant.WGS_84);
 
-                        string line = $"{subPoint.getLongitude():F6},{subPoint.getLatitude():F6}\n";
-                        File.AppendAllText(outputPath, line);
+                        double lon = subPoint.getLongitude();
+                        double lat = subPoint.getLatitude();
 
-                        Log($"Wrote point: Lon={subPoint.getLongitude():F6},Lat={subPoint.getLatitude():F6}");
+                        // Step 3: Earth radius at satellite's current latitude (WGS-84)
+                        double earthRadiusKm = GetEarthRadiusAtLatitude(lat);
+
+                        // Step 4: Altitude from ECI vector magnitude minus WGS-84 Earth radius
+                        double eciMagnitude = Math.Sqrt(
+                            state.getX() * state.getX() +
+                            state.getY() * state.getY() +
+                            state.getZ() * state.getZ()
+                        );
+                        double altKm = eciMagnitude - earthRadiusKm;
+
+                        // Write CSV line
+                        string csvLine = $"{lat:F6},{lon:F6},{altKm:F3}\n";
+                        File.AppendAllText(csvOutputPath, csvLine);
+
+                        Log($"Point [{i}]: Lat={lat:F6}, Lon={lon:F6}, Alt={altKm:F3} km");
                     }
                     catch (Exception exInner)
                     {
-                        Log($"ERROR inside interval loop: {exInner.Message} | {exInner.StackTrace}");
+                        Log($"ERROR at step {i}: {exInner.Message} | {exInner.StackTrace}");
                     }
 
                     await Task.Delay(20);
                 }
 
                 Log("Satellite tracking completed successfully.");
-                MessageBox.Show("BNA file created successfully!",
-                                "Success",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information);
+                MessageBox.Show(
+                    $"CSV created successfully!\n\n{csvOutputPath}",
+                    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 Log("********** FATAL ERROR **********");
                 Log($"Exception: {ex.GetType().Name}");
-                Log($"Message: {ex.Message}");
-                Log($"StackTrace: {ex.StackTrace}");
+                Log($"Message:   {ex.Message}");
+                Log($"StackTrace:{ex.StackTrace}");
 
                 MessageBox.Show(
-                    "An error occurred while generating the BNA file.\n" +
+                    "An error occurred while generating the file.\n" +
                     "Please check the log file:\n" + LogFilePath,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 Log("========== Satellite Tracking Finished ==========\n\n");
             }
+        }
+
+
+        /// <summary>
+        /// Returns Earth's radius (km) at a given geodetic latitude
+        /// using the WGS-84 ellipsoid model.
+        /// </summary>
+        private double GetEarthRadiusAtLatitude(double latitudeDeg)
+        {
+            double latRad = latitudeDeg * Math.PI / 180.0;
+            double cosLat = Math.Cos(latRad);
+            double sinLat = Math.Sin(latRad);
+
+            double radius = Math.Sqrt(
+                (Math.Pow(WGS84_A * WGS84_A * cosLat, 2) + Math.Pow(WGS84_B * WGS84_B * sinLat, 2)) /
+                (Math.Pow(WGS84_A * cosLat, 2) + Math.Pow(WGS84_B * sinLat, 2))
+            );
+
+            return radius;
         }
     }
 }

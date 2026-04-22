@@ -120,7 +120,7 @@
             lblOutput.Name = "lblOutput";
             lblOutput.Size = new Size(112, 18);
             lblOutput.TabIndex = 10;
-            lblOutput.Text = "Output BNA file:";
+            lblOutput.Text = "Output CSV file:";
             // 
             // txtOutputFile
             // 
