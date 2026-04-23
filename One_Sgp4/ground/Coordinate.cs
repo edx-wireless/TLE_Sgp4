@@ -36,6 +36,7 @@ namespace One_Sgp4
         private double latitude; //!< double Latetude in degree
         private double longitude; //!< double longitude in degree
         private double height; //!< double height in meters
+        private double altitude;
 
         //! GeoCoordinate constructor.
         /*!
@@ -81,6 +82,11 @@ namespace One_Sgp4
             return longitude;
         }
 
+        public double getAltitude()
+        {
+            return altitude;
+        }
+
         //! Returns the height
         /*!
         \return double height
@@ -116,7 +122,7 @@ namespace One_Sgp4
             eciPos.x = a * c * Math.Cos(lat_rad) * Math.Cos(srt);
             eciPos.y = a * c * Math.Cos(lat_rad) * Math.Sin(srt);
             eciPos.z = a * s * Math.Sin(lat_rad);
-            
+
             return eciPos;
         }
 
