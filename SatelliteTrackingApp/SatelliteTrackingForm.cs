@@ -204,7 +204,7 @@ namespace SatelliteTrackingApp
                 Log($"Total points to calculate: {totalPoints}");
 
                 // Write CSV header
-                string csvHeader = "Latitude,Longitude,Altitude_km\n";
+                string csvHeader = "DateTime,Latitude,Longitude,Altitude_km\n";
                 File.WriteAllText(csvOutputPath, csvHeader);
                 Log($"Wrote CSV header to: {csvOutputPath}");
 
@@ -246,10 +246,10 @@ namespace SatelliteTrackingApp
                         double altKm = eciMagnitude - earthRadiusKm;
 
                         // Write CSV line
-                        string csvLine = $"{lat:F6},{lon:F6},{altKm:F3}\n";
+                        string csvLine = $"=\"{currentDateTime:yyyy-MM-dd HH:mm:ss}\",{lat:F6},{lon:F6},{altKm:F3}\n";
                         File.AppendAllText(csvOutputPath, csvLine);
 
-                        Log($"Point [{i}]: Lat={lat:F6}, Lon={lon:F6}, Alt={altKm:F3} km");
+                        Log($"Point [{i}]: {currentDateTime:yyyy-MM-dd HH:mm:ss}, Lat={lat:F6}, Lon={lon:F6}, Alt={altKm:F3} km");
                     }
                     catch (Exception exInner)
                     {
