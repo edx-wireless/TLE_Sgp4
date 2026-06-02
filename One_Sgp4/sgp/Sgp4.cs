@@ -628,10 +628,37 @@ namespace One_Sgp4
 
 	        Sgp4Data data = new Sgp4Data(satCalcData.rec_satnum);
 
-            data.setX(satCalcData.rec_r[0] * radiusEarthKm);
-            data.setY(satCalcData.rec_r[1] * radiusEarthKm);
-            data.setZ(satCalcData.rec_r[2] * radiusEarthKm);
+            // ── STEP 1 — Scale raw ECI position from Earth radii → km ──
+            double xEci = satCalcData.rec_r[0] * radiusEarthKm;
+            double yEci = satCalcData.rec_r[1] * radiusEarthKm;
+            double zEci = satCalcData.rec_r[2] * radiusEarthKm;
 
+            // ── STEP 2 — Compute current Julian Date ──
+            // neo_t is minutes elapsed since TLE epoch
+            // ÷ 1440 converts minutes to days
+            // + 2400000.5 converts MJD to full Julian Date
+            double mjdNow = satCalcData.rec_mjdsatepoch
+                          + (satCalcData.neo.neo_t / 1440.0);
+            double jdNow = mjdNow + 2400000.5;
+
+            // ── STEP 3 — Compute GMST (Earth rotation angle in radians) ──
+            double gmst = gstime(jdNow);
+            double cosGmst = Math.Cos(gmst);
+            double sinGmst = Math.Sin(gmst);
+
+            // ── STEP 4 — Rotate ECI → ECEF ──
+            // X and Y rotate by GMST angle, Z (North Pole) never changes
+            double xEcef = xEci * cosGmst + yEci * sinGmst;
+            double yEcef = -xEci * sinGmst + yEci * cosGmst;
+            double zEcef = zEci;
+
+            // ── STEP 5 — Store position (ECEF frame, km) ──
+            data.setX(xEcef);
+            data.setY(yEcef);
+            data.setZ(zEcef);
+
+            // ── STEP 6 — Store velocity (ECI frame, km/s) ──
+            // Velocity is NOT rotated — stays in ECI for Doppler calculation
             data.setXDot(satCalcData.rec_v[0] * vkmpersec);
             data.setYDot(satCalcData.rec_v[1] * vkmpersec);
             data.setZDot(satCalcData.rec_v[2] * vkmpersec);

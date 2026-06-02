@@ -204,7 +204,8 @@ namespace SatelliteTrackingApp
                 Log($"Total points to calculate: {totalPoints}");
 
                 // Write CSV header
-                string csvHeader = "DateTime,Latitude,Longitude,Altitude_km\n";
+                string csvHeader = "DateTime,Latitude,Longitude,Altitude_km," +
+                   "v_sat_X_kms,v_sat_Y_kms,v_sat_Z_kms\n";
                 File.WriteAllText(csvOutputPath, csvHeader);
                 Log($"Wrote CSV header to: {csvOutputPath}");
 
@@ -245,8 +246,17 @@ namespace SatelliteTrackingApp
                         );
                         double altKm = eciMagnitude - earthRadiusKm;
 
-                        // Write CSV line
-                        string csvLine = $"=\"{currentDateTime:yyyy-MM-dd HH:mm:ss}\",{lat:F6},{lon:F6},{altKm:F3}\n";
+                        double r_sat_X = state.getX();
+                        double r_sat_Y = state.getY();
+                        double r_sat_Z = state.getZ();
+                        double v_sat_X = state.getXDot();
+                        double v_sat_Y = state.getYDot();
+                        double v_sat_Z = state.getZDot();
+                        
+                        // Write CSV line                        
+                        string csvLine = $"{currentDateTime:yyyy-MM-dd HH:mm:ss}," +
+                                         $"{lat:F6},{lon:F6},{altKm:F3}," +                                        
+                                         $"{v_sat_X:F6},{v_sat_Y:F6},{v_sat_Z:F6}\n";
                         File.AppendAllText(csvOutputPath, csvLine);
 
                         Log($"Point [{i}]: {currentDateTime:yyyy-MM-dd HH:mm:ss}, Lat={lat:F6}, Lon={lon:F6}, Alt={altKm:F3} km");
