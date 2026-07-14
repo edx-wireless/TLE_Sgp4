@@ -173,7 +173,12 @@ namespace SatelliteTrackingApp
                 // ------------------------------
                 // ** DATE VALIDATION **
                 // ------------------------------
-                DateTime startDate = dateTimePickerPassTime.Value;
+                DateTime rawValue = dateTimePickerPassTime.Value;
+                DateTime startDate = DateTime.SpecifyKind(
+                    new DateTime(rawValue.Year, rawValue.Month, rawValue.Day,
+                                 rawValue.Hour, rawValue.Minute, 0, 0,
+                                 DateTimeKind.Unspecified),          // strip seconds+ms
+                                 DateTimeKind.Utc);
 
                 // ------------------------------
                 //   INPUTS ARE VALID - CONTINUE
@@ -226,26 +231,11 @@ namespace SatelliteTrackingApp
 
                         // Step 1: SGP4 - get ECI position from TLE
                         Sgp4Data state = SatFunctions.getSatPositionAtTime(
-                            tle, currentTime, Sgp4.wgsConstant.WGS_84);
+                            tle, currentTime, Sgp4.wgsConstant.WGS_84);                        
 
-                        // Step 2: Sub-satellite point (lat, lon)
-                        Coordinate subPoint = SatFunctions.calcSatSubPoint(
-                            currentTime, state, Sgp4.wgsConstant.WGS_84);
-
-                        double lon = subPoint.getLongitude();
-                        double lat = subPoint.getLatitude();
-
-                        // Step 3: Earth radius at satellite's current latitude (WGS-84)
-                        double earthRadiusKm = GetEarthRadiusAtLatitude(lat);
-
-                        // Step 4: Altitude from ECI vector magnitude minus WGS-84 Earth radius
-                        double eciMagnitude = Math.Sqrt(
-                            state.getX() * state.getX() +
-                            state.getY() * state.getY() +
-                            state.getZ() * state.getZ()
-                        );
-                        double altKm = eciMagnitude - earthRadiusKm;
-
+                        double lat, lon, altKm;
+                        GetLatLonAlt(state, out lat, out lon, out altKm);
+                      
                         double r_sat_X = state.getX();
                         double r_sat_Y = state.getY();
                         double r_sat_Z = state.getZ();
@@ -292,23 +282,44 @@ namespace SatelliteTrackingApp
             }
         }
 
-
         /// <summary>
-        /// Returns Earth's radius (km) at a given geodetic latitude
-        /// using the WGS-84 ellipsoid model.
+        /// Converts Sgp4Data ECEF position to WGS84 geodetic lat/lon/alt.
+        /// Uses iterative Bowring method — correct geodetic latitude (not geocentric).
+        /// state.getX/Y/Z() are already in ECEF km from calcSgp4().
         /// </summary>
-        private double GetEarthRadiusAtLatitude(double latitudeDeg)
+        private void GetLatLonAlt(Sgp4Data state,
+                                   out double latitude,
+                                   out double longitude,
+                                   out double altitude_km)
         {
-            double latRad = latitudeDeg * Math.PI / 180.0;
-            double cosLat = Math.Cos(latRad);
-            double sinLat = Math.Sin(latRad);
+            const double a = 6378.137;             // WGS84 semi-major axis km
+            const double f = 1.0 / 298.257223563;  // flattening
+            const double e2 = 2.0 * f - f * f;      // eccentricity squared
+            const double toDeg = 180.0 / Math.PI;
 
-            double radius = Math.Sqrt(
-                (Math.Pow(WGS84_A * WGS84_A * cosLat, 2) + Math.Pow(WGS84_B * WGS84_B * sinLat, 2)) /
-                (Math.Pow(WGS84_A * cosLat, 2) + Math.Pow(WGS84_B * sinLat, 2))
-            );
+            double xEcef = state.getX();   // already ECEF km
+            double yEcef = state.getY();
+            double zEcef = state.getZ();
 
-            return radius;
+            
+            longitude = Math.Atan2(yEcef, xEcef) * toDeg;
+            
+            double p = Math.Sqrt(xEcef * xEcef + yEcef * yEcef);
+            double lat = Math.Atan2(zEcef, p * (1.0 - e2));   // initial estimate
+            for (int iter = 0; iter < 10; iter++)
+            {
+                double sinLat = Math.Sin(lat);
+                double N = a / Math.Sqrt(1.0 - e2 * sinLat * sinLat);
+                double latNew = Math.Atan2(zEcef + e2 * N * sinLat, p);
+                if (Math.Abs(latNew - lat) < 1e-12) break;
+                lat = latNew;
+            }
+            latitude = lat * toDeg;
+
+            // Altitude above WGS84 ellipsoid
+            double sinLatF = Math.Sin(lat);
+            double N_final = a / Math.Sqrt(1.0 - e2 * sinLatF * sinLatF);
+            altitude_km = p / Math.Cos(lat) - N_final;
         }
     }
 }

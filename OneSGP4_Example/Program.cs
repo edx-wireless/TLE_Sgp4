@@ -177,7 +177,7 @@ namespace OneSGP4_Example
             //Return Results containing satellite Position x,y,z (ECI-Coordinates in Km) and Velocity x_d, y_d, z_d (ECI-Coordinates km/s) 
             resultDataList = sgp4Propagator.getResults();
 
-            startTime = new EpochTime(DateTime.Now);
+            startTime = new EpochTime(DateTime.UtcNow);
             //Coordinate of an observer on Ground lat, long, height(in meters)
             One_Sgp4.Coordinate observer = new Coordinate(35.00, 18, 0);
 
